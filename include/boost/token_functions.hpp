@@ -36,6 +36,8 @@
 #include <string>
 #include <cctype>
 #include <algorithm> // for find_if
+#include <experimental/string_view>
+#include <type_traits>
 #include <boost/config.hpp>
 #include <boost/assert.hpp>
 #include <boost/detail/workaround.hpp>
@@ -264,6 +266,45 @@ namespace boost{
     }
   };
 
+
+  template <typename charT> using basic_string_view_type =
+    std::experimental::basic_string_view<charT>;
+
+  template <typename Iterator>
+  inline constexpr auto make_string_view(Iterator begin, Iterator end )
+  {
+    using result_type =
+      basic_string_view_type<typename std::iterator_traits<Iterator>::value_type>;
+
+    return result_type {
+      &*begin
+      ,  ( typename result_type::size_type )
+          std::max(
+              std::distance( begin, end )
+              , ( typename result_type::difference_type )0
+          )
+    };
+  }   // make_string_view
+
+  template <typename Token, typename Enable = void>
+  struct assigner_impl {
+    template<class Iterator>
+    static void assign(Iterator b, Iterator e, Token &t) {
+      t.assign(b, e);
+    }
+  };
+
+  template <typename Token>
+  struct assigner_impl<Token,
+        typename std::enable_if<
+          std::is_same<Token, std::experimental::basic_string_view<char>>::value>::type>
+    {
+    template<class Iterator>
+    static void assign(Iterator b, Iterator e, Token &t) {
+      t = make_string_view(b, e);
+    }
+  };
+
   // The assign_or_plus_equal struct contains functions that implement
   // assign, +=, and clearing based on the iterator type.  The
   // generic case does nothing for plus_equal and clearing, while
@@ -275,11 +316,11 @@ namespace boost{
   // token constructor's result.
   //
 
-  template<class IteratorTag>
+ template<class IteratorTag>
   struct assign_or_plus_equal {
     template<class Iterator, class Token>
     static void assign(Iterator b, Iterator e, Token &t) {
-      t.assign(b, e);
+      assigner_impl<Token>::assign(b, e, t);
     }
 
     template<class Token, class Value>
