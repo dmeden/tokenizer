@@ -42,6 +42,7 @@ install:
   - cd boost-root
   - git submodule init libs/static_assert
   - git submodule init libs/type_traits
+  - git submodule init libs/config
   - git submodule init tools/build
   - git submodule update
   - ./bootstrap.sh
