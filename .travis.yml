@@ -16,6 +16,7 @@ branches:
   only:
     - develop
     - master
+    - travis_support
 
 matrix:
   exclude: 
